@@ -29,11 +29,11 @@ app.use(
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(bodyParser.json());
-app.use("/api/users", userRoutese);
-app.use("/api/address", addressesRoutes);
-app.use("/api/order", orderRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/wishlist", wishlistRoutes);
+app.use("/api", userRoutese);
+app.use("/api", addressesRoutes);
+app.use("/api", orderRoutes);
+app.use("/api", productRoutes);
+app.use("/api", wishlistRoutes);
 
 app.use("*", (req, res) => res.status(404).json({ error: "ops not found" }));
 server.listen(PORT, () => {
