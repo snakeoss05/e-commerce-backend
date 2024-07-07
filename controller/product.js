@@ -3,7 +3,7 @@ import Product from "../models/Product.js";
 
 // GET all products with filters and pagination
 export const getAllProducts = async (req, res) => {
-  const { page = 1, limit = 10, category, discount, name } = req.query;
+  const { page, limit, category, discount, name } = req.query;
 
   if (page < 1 || limit < 1) {
     return res.status(400).json({ error: "Invalid pagination parameters" });
