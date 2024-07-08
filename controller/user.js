@@ -7,11 +7,22 @@ export async function Login(req, res) {
   const { email, password } = req.body;
 
   const secretOrPrivateKey = process.env.ACCESS_TOKEN_SECRET;
-  const user = await User.findOne({ email: email });
 
   try {
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ message: "Email and password are required." });
+    }
+
+    const user = await User.findOne({ email: email }).select("+password");
+
     if (!user) {
       return res.status(400).json({ message: "User not registered." });
+    }
+
+    if (!user.password) {
+      return res.status(500).json({ message: "User password is not defined." });
     }
 
     const isPasswordMatch = await user.matchPassword(password);
@@ -19,15 +30,18 @@ export async function Login(req, res) {
     if (!isPasswordMatch) {
       return res.status(400).json({ message: "Wrong password" });
     }
+
     const tokenData = {
       userId: user._id,
     };
     const token = jwt.sign(tokenData, secretOrPrivateKey, { expiresIn: "1d" });
 
-    res.json({ user: user, token: token, message: "Login Successful" });
+    return res
+      .status(200)
+      .json({ user: user, token: token, message: "Login Successful" });
   } catch (error) {
     console.error(error);
-    return res.json("Internal server error.", error);
+    return res.status(400).json({ message: "Bad Request: " + error.message });
   }
 }
 export async function Register(req, res) {

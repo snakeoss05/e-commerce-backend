@@ -2,11 +2,28 @@ import Order from "../models/Order.js";
 
 // GET all orders
 export const getAllOrders = async (req, res) => {
+  const { page, limit } = req.query;
+
+  if (page < 1 || limit < 1) {
+    return res.status(400).json({ error: "Invalid pagination parameters" });
+  }
   try {
-    const orders = await Order.find({}).populate("user", "name email");
-    return res.status(200).json({ success: true, data: orders });
+    const orders = await Order.find()
+      .populate("user")
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const total = await Order.countDocuments();
+    return res.status(200).json({
+      currentPage: parseInt(page, 10),
+      totalPages: Math.ceil(total / limit),
+      data: orders,
+    });
   } catch (error) {
-    return res.status(400).json({ success: false });
+    console.error("Error fetching orders:", error);
+    return res
+      .status(400)
+      .json({ success: false, message: "Failed to fetch orders" });
   }
 };
 
@@ -16,23 +33,42 @@ export const createOrder = async (req, res) => {
     const order = await Order.create(req.body);
     return res.status(201).json({ success: true, data: order });
   } catch (error) {
-    return res.status(400).json({ success: false });
+    console.error("Error creating order:", error);
+    return res
+      .status(400)
+      .json({ success: false, message: "Failed to create order" });
   }
 };
 
 // GET order by ID
 export const getOrderById = async (req, res) => {
+  const { page, limit } = req.query;
+
+  if (page < 1 || limit < 1) {
+    return res.status(400).json({ error: "Invalid pagination parameters" });
+  }
   try {
-    const order = await Order.findById(req.params.id).populate(
-      "user",
-      "name email"
-    );
+    const order = await Order.find({ user: req.params.id })
+      .select("totalPrice status _id createdAt")
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
     if (!order) {
-      return res.status(404).json({ success: false });
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
     }
-    return res.status(200).json({ success: true, data: order });
+    const total = await Order.countDocuments({ user: req.params.id });
+    return res.status(200).json({
+      currentPage: parseInt(page, 10),
+      totalPages: Math.ceil(total / limit),
+      data: order,
+    });
   } catch (error) {
-    return res.status(400).json({ success: false });
+    console.error("Error fetching order by ID:", error);
+    return res
+      .status(400)
+      .json({ success: false, message: "Failed to fetch order by ID" });
   }
 };
 
@@ -43,7 +79,9 @@ export const updateOrderStatus = async (req, res) => {
     const order = await Order.findById(orderId);
 
     if (!order) {
-      return res.status(404).json({ message: "Order not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
     }
 
     order.status = status;
@@ -54,9 +92,12 @@ export const updateOrderStatus = async (req, res) => {
     }
 
     await order.save();
-    return res.status(200).json(order);
+    return res.status(200).json({ success: true, data: order });
   } catch (error) {
-    return res.status(400).json({ success: false });
+    console.error("Error updating order status:", error);
+    return res
+      .status(400)
+      .json({ success: false, message: "Failed to update order status" });
   }
 };
 
@@ -64,11 +105,16 @@ export const updateOrderStatus = async (req, res) => {
 export const deleteOrder = async (req, res) => {
   try {
     const deletedOrder = await Order.deleteOne({ _id: req.params.id });
-    if (!deletedOrder) {
-      return res.status(404).json({ success: false });
+    if (!deletedOrder.deletedCount) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
     }
     return res.status(200).json({ success: true, data: {} });
   } catch (error) {
-    return res.status(400).json({ success: false });
+    console.error("Error deleting order:", error);
+    return res
+      .status(400)
+      .json({ success: false, message: "Failed to delete order" });
   }
 };

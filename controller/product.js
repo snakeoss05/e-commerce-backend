@@ -2,6 +2,31 @@
 import Product from "../models/Product.js";
 
 // GET all products with filters and pagination
+export const searchProducts = async (req, res) => {
+  const name = req.query.name;
+
+  if (!name) {
+    return res.status(400).json({ error: "Name parameter is required" });
+  }
+
+  const filter = {};
+  if (name) {
+    filter.name = { $regex: name, $options: "i" };
+  }
+
+  try {
+    const products = await Product.find(filter)
+      .limit(8)
+      .select("name price image stock");
+
+    return res.status(200).json({
+      data: products,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ error: "Failed to fetch products" });
+  }
+};
 export const getAllProducts = async (req, res) => {
   const { page, limit, category, discount, name } = req.query;
 
@@ -83,21 +108,3 @@ export const deleteProduct = async (req, res) => {
 };
 
 // Search products
-export const searchProducts = async (req, res) => {
-  const { page = 1, limit = 10, name } = req.query;
-
-  const filter = {};
-  if (name) filter.name = { $regex: name, $options: "i" };
-
-  try {
-    const products = await Product.find(filter)
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .select("name price image stock");
-
-    const total = await Product.countDocuments(filter);
-    return res.status(200).json({ data: products });
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to fetch products" });
-  }
-};

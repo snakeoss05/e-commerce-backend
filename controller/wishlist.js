@@ -3,23 +3,23 @@ import Wishlist from "../models/Wishlist.js";
 
 // POST - Add a product to the wishlist
 export const addToWishlist = async (req, res) => {
-  const data = req.body;
+  const { productId } = req.body;
 
   try {
     const wishlist = await Wishlist.findOne({ userId: req.params.id });
-    if (wishlist && wishlist.productId.includes(data)) {
+    if (wishlist && wishlist.productId.includes(productId)) {
       return res.status(201).json({ success: true, data: wishlist });
     }
 
     if (wishlist) {
-      wishlist.productId.push(data);
+      wishlist.productId.push(productId);
       await wishlist.save();
       return res.status(201).json({ success: true, data: wishlist });
     }
 
     const newWishlist = await Wishlist.create({
       userId: req.params.id,
-      productId: data,
+      productId: [productId],
     });
     return res.status(201).json({ success: true, data: newWishlist });
   } catch (error) {

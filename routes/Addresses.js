@@ -8,8 +8,8 @@ import {
 
 const router = express.Router();
 
-router.get("/user/:id/address", getAddress);
-router.delete("/user/:id/address", deleteAddress);
-router.post("/user/:id/address", postAddress);
+router.get("/:id", getAddress);
+router.delete("/:id", deleteAddress);
+router.post("/:id", postAddress);
 
 export default router;

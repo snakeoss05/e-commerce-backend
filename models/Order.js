@@ -16,6 +16,7 @@ const orderSchema = new mongoose.Schema(
     paymentMethod: { type: String, required: true },
     fullname: { type: String },
     email: { type: String },
+    createdAt: { type: Date, default: Date.now },
     phone: { type: String },
     address: { type: String },
     tax: { type: Number, required: true, default: 0.0 },
