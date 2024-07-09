@@ -33,6 +33,7 @@ export async function Login(req, res) {
 
     const tokenData = {
       userId: user._id,
+      isAdmin: user.isAdmin,
     };
     const token = jwt.sign(tokenData, secretOrPrivateKey, { expiresIn: "1d" });
 
