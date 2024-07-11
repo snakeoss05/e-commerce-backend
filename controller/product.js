@@ -1,7 +1,24 @@
 // controllers/productController.js
 import Product from "../models/Product.js";
+import cloudinary from "../storage/cloudinaryConfig.js";
 
 // GET all products with filters and pagination
+
+export const uploadProductImage = async (req, res) => {
+  try {
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: "products", // specify the folder name in Cloudinary
+    });
+
+    res.status(200).json({
+      success: true,
+      imageUrl: result.secure_url,
+    });
+  } catch (error) {
+    console.error("Error uploading image:", error);
+    res.status(500).json({ success: false, error: "Image upload failed" });
+  }
+};
 export const searchProducts = async (req, res) => {
   const name = req.query.name;
 
@@ -28,7 +45,17 @@ export const searchProducts = async (req, res) => {
   }
 };
 export const getAllProducts = async (req, res) => {
-  const { page, limit, category, discount, name } = req.query;
+  const {
+    minPrice,
+    maxPrice,
+    limit,
+    category,
+    discount,
+    name,
+    stock,
+    page,
+    mark,
+  } = req.query;
 
   if (page < 1 || limit < 1) {
     return res.status(400).json({ error: "Invalid pagination parameters" });
@@ -38,7 +65,19 @@ export const getAllProducts = async (req, res) => {
   if (category) filter.category = category;
   if (discount === "true") filter.discount = { $ne: 0 };
   if (name) filter.name = { $regex: name, $options: "i" };
+  if (minPrice || maxPrice) {
+    filter.price = {};
+    if (minPrice) filter.price.$gte = Number(minPrice);
+    if (maxPrice) filter.price.$lte = Number(maxPrice);
+  }
 
+  if (stock) {
+    filter.stock = { $gte: Number(stock) };
+  }
+
+  if (mark) {
+    filter.mark = mark;
+  }
   try {
     const products = await Product.find(filter)
       .limit(limit * 1)
@@ -58,10 +97,35 @@ export const getAllProducts = async (req, res) => {
 // POST a new product
 export const createProduct = async (req, res) => {
   try {
-    const product = await Product.create(req.body);
-    return res.status(201).json({ success: true, data: product });
+    const imageUploadPromises = req.files.map((file) =>
+      cloudinary.uploader.upload(file.path, { folder: "products" })
+    );
+
+    const imageUploadResults = await Promise.all(imageUploadPromises);
+    const imageUrls = imageUploadResults.map((result) => result.secure_url);
+
+    const { name, description, price, discount, category, stock } = req.body;
+
+    // Assign the uploaded image URLs to the correct fields
+    const product = new Product({
+      name,
+      description,
+      price,
+      discount,
+      category,
+      stock,
+      image: imageUrls[0] || null,
+      image1: imageUrls[1] || null,
+      image2: imageUrls[2] || null,
+      image3: imageUrls[3] || null,
+    });
+
+    await product.save();
+
+    res.status(201).json({ success: true, data: product });
   } catch (error) {
-    return res.status(400).json({ success: false, error: error.message });
+    console.error("Error creating product:", error);
+    res.status(500).json({ success: false, error: "Product creation failed" });
   }
 };
 
