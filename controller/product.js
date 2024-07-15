@@ -108,11 +108,13 @@ export const createProduct = async (req, res) => {
     const imageUploadResults = await Promise.all(imageUploadPromises);
     const imageUrls = imageUploadResults.map((result) => result.secure_url);
 
-    const { name, description, price, discount, category, stock } = req.body;
+    const { name, description, price, discount, category, stock, mark } =
+      req.body;
 
     // Assign the uploaded image URLs to the correct fields
     const product = new Product({
       name,
+      mark,
       description,
       price,
       discount,
