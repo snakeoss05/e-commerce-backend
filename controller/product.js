@@ -8,6 +8,12 @@ export const uploadProductImage = async (req, res) => {
   try {
     const result = await cloudinary.uploader.upload(req.file.path, {
       folder: "products", // specify the folder name in Cloudinary
+      fetch_format: "AVIF",
+      quality: "auto",
+      crop: "auto",
+      gravity: "auto",
+      width: 500,
+      height: 500,
     });
 
     res.status(200).json({
@@ -70,11 +76,9 @@ export const getAllProducts = async (req, res) => {
     if (minPrice) filter.price.$gte = Number(minPrice);
     if (maxPrice) filter.price.$lte = Number(maxPrice);
   }
-
   if (stock) {
-    filter.stock = { $gte: Number(stock) };
+    stock > 0 ? (filter.stock = { $gte: Number(stock) }) : (filter.stock = 0);
   }
-
   if (mark) {
     filter.mark = mark;
   }

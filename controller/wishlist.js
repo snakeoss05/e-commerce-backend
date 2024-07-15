@@ -70,14 +70,15 @@ export const updateWishlist = async (req, res) => {
 // DELETE - Delete the wishlist by ID
 export const deleteWishlist = async (req, res) => {
   try {
-    const deletedWishlist = await Wishlist.deleteOne({ _id: req.params.id });
+    const deletedWishlist = await Wishlist.deleteMany({
+      userId: req.params.id,
+    });
 
     if (!deletedWishlist) {
       return res.status(404).json({ success: false });
     }
-
-    return res.status(200).json({ success: true, data: {} });
+    res.status(200).json({ message: "Wishlist cleared successfully" });
   } catch (error) {
-    return res.status(400).json({ success: false, error: error.message });
+    res.status(500).json({ message: "Error clearing wishlist", error });
   }
 };

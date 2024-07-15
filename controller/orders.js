@@ -1,4 +1,8 @@
 import Order from "../models/Order.js";
+import generateInvoicePDF from "../storage/generateInvoicePDF.js";
+import express from "express";
+import fs from "fs";
+import path from "path";
 
 // GET all orders
 export const getAllOrders = async (req, res) => {
@@ -49,7 +53,7 @@ export const getOrderById = async (req, res) => {
   }
   try {
     const order = await Order.find({ user: req.params.id })
-      .select("totalPrice status _id createdAt")
+      .select("totalPrice status _id orderId createdAt")
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
@@ -62,6 +66,26 @@ export const getOrderById = async (req, res) => {
     return res.status(200).json({
       currentPage: parseInt(page, 10),
       totalPages: Math.ceil(total / limit),
+      data: order,
+    });
+  } catch (error) {
+    console.error("Error fetching order by ID:", error);
+    return res
+      .status(400)
+      .json({ success: false, message: "Failed to fetch order by ID" });
+  }
+};
+export const getOrderByOderId = async (req, res) => {
+  try {
+    const order = await Order.find({ orderId: req.params.id }).populate("user");
+
+    if (!order) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
+    }
+
+    return res.status(200).json({
       data: order,
     });
   } catch (error) {
@@ -139,5 +163,25 @@ export const deleteOrder = async (req, res) => {
     return res
       .status(400)
       .json({ success: false, message: "Failed to delete order" });
+  }
+};
+export const generateInvoice = async (req, res) => {
+  const orderId = req.params.id;
+
+  if (!orderId) {
+    return res.status(400).json({ error: "Order ID is required" });
+  }
+
+  try {
+    const pdfPath = await generateInvoicePDF(orderId);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${path.basename(pdfPath)}`
+    );
+    fs.createReadStream(pdfPath).pipe(res);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to generate invoice" });
   }
 };
