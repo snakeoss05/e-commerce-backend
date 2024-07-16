@@ -2,18 +2,44 @@ import Order from "../models/Order.js";
 import generateInvoicePDF from "../storage/generateInvoicePDF.js";
 import express from "express";
 import fs from "fs";
+import moment from "moment";
 import path from "path";
 
 // GET all orders
 export const getAllOrders = async (req, res) => {
-  const { page, limit } = req.query;
+  const { page, limit, orderDate, status } = req.query;
 
   if (page < 1 || limit < 1) {
     return res.status(400).json({ error: "Invalid pagination parameters" });
   }
+  const filter = {};
+  let startDate;
+  let endDate = moment().endOf("day");
+
+  switch (orderDate) {
+    case "today":
+      startDate = moment().startOf("day");
+      filter.createdAt = { $gte: startDate, $lte: endDate };
+      break;
+    case "this_week":
+      startDate = moment().startOf("week");
+      filter.createdAt = { $gte: startDate, $lte: endDate };
+      break;
+    case "this_month":
+      startDate = moment().startOf("month");
+      filter.createdAt = { $gte: startDate, $lte: endDate };
+      break;
+    default:
+      startDate = moment().startOf("week");
+      filter.createdAt = { $gte: startDate, $lte: endDate };
+  }
+
+  if (status) {
+    filter.status = status;
+  }
   try {
-    const orders = await Order.find()
-      .populate("user")
+    const orders = await Order.find(filter)
+      .populate("user orderItems.product")
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
@@ -77,7 +103,9 @@ export const getOrderById = async (req, res) => {
 };
 export const getOrderByOderId = async (req, res) => {
   try {
-    const order = await Order.find({ orderId: req.params.id }).populate("user");
+    const order = await Order.find({ orderId: req.params.id }).populate(
+      "user orderItems.product"
+    );
 
     if (!order) {
       return res
