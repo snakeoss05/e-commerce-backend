@@ -123,7 +123,7 @@ export const createProduct = async (req, res) => {
       image: imageUrls[0] || null,
       image1: imageUrls[1] || null,
       image2: imageUrls[2] || null,
-      image3: imageUrls[3] || null,
+      image3: imageUrls[3] || imageUrls[0],
     });
 
     await product.save();
@@ -150,11 +150,44 @@ export const getProductById = async (req, res) => {
 
 // PUT update product by ID
 export const updateProduct = async (req, res) => {
+  const { name, description, price, discount, category, stock, mark } =
+    req.body;
+  const imageUploadPromises = req.files.map((file) =>
+    cloudinary.uploader.upload(file.path, { folder: "products" })
+  );
+  const updateFields = {};
+  const imageUploadResults = await Promise.all(imageUploadPromises);
+  const imageUrls = imageUploadResults.map((result) => result.secure_url);
+  if (imageUrls[0]) {
+    updateFields.image = imageUrls[0];
+  }
+  if (imageUrls[1]) {
+    updateFields.image1 = imageUrls[1];
+  }
+  if (imageUrls[2]) {
+    updateFields.image2 = imageUrls[2];
+  }
+  if (imageUrls[3]) {
+    updateFields.image3 = imageUrls[3];
+  }
+
+  if (name) updateFields.name = name;
+  if (description) updateFields.description = description;
+  if (price) updateFields.price = price;
+  if (discount) updateFields.discount = discount;
+  if (category) updateFields.category = category;
+  if (stock) updateFields.stock = stock;
+  if (mark) updateFields.mark = mark;
   try {
-    const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const product = await Product.findByIdAndUpdate(
+      req.params.id,
+      {
+        $set: updateFields,
+      },
+      {
+        new: true,
+      }
+    );
     if (!product) {
       return res.status(404).json({ success: false });
     }
