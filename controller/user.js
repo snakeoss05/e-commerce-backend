@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { sendMail } from "../controller/mailerSender.js";
 import mongoose from "mongoose";
 
 export async function Login(req, res) {
@@ -113,6 +114,40 @@ export async function getProfile(req, res) {
     const results = await User.findOne({
       _id: new mongoose.Types.ObjectId(id),
     }).select("-password");
+    return res.status(200).json({ results: results });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+}
+
+export async function verifyOtp(req, res) {
+  const { email, otp } = req.body;
+  try {
+    const user = await User.findOne({ email: email });
+    if (!user || user.resetOtp !== otp || Date.now() > user.otpExpires) {
+      throw new Error("Invalid or expired OTP");
+    }
+    return res.status(200).json({ success: true, message: "OTP verified" });
+  } catch (err) {
+    return res.status(400).json({ message: "Bad Request: " + error.message });
+  }
+
+  // OTP is valid, allow the user to reset their password
+}
+export async function resetPassword(req, res) {
+  const { email, newPassword } = req.body;
+
+  const user = await User.findOne({ email });
+  user.password = await bcryptjs.hash(newPassword, 10);
+  user.resetOtp = undefined;
+  user.otpExpires = undefined;
+  await user.save();
+  console.log("Password reset successful");
+}
+export async function SendOtp(req, res) {
+  const { email } = req.body;
+  try {
+    const results = await sendMail(email);
     return res.status(200).json({ results: results });
   } catch (err) {
     return res.status(400).json({ error: err.message });

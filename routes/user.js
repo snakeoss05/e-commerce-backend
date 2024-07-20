@@ -1,5 +1,13 @@
 import express from "express";
-import { Login, Register, UpdateUser, getProfile } from "../controller/user.js";
+import {
+  Login,
+  Register,
+  UpdateUser,
+  getProfile,
+  SendOtp,
+  resetPassword,
+  verifyOtp
+} from "../controller/user.js";
 import protectRoute from "../middleware/protectRoute.js";
 
 const router = express.Router();
@@ -7,5 +15,9 @@ const router = express.Router();
 router.post("/users", Register);
 router.post("/auth/login", Login);
 router.put("/profile/update", protectRoute, UpdateUser);
-router.get("/profile/:id", protectRoute,getProfile);
+router.get("/profile/:id", protectRoute, getProfile);
+router.post("/auth/send-otp", SendOtp);
+router.put("/auth/reset-password", resetPassword);
+router.post("/auth/verify-otp", verifyOtp);
+
 export default router;

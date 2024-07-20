@@ -23,6 +23,8 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
     isAdmin: { type: Boolean, default: false, required: true },
+    resetOtp: String,
+    otpExpires: Date,
     address: {
       phone: {
         type: String,
