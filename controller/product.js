@@ -61,12 +61,14 @@ export const getAllProducts = async (req, res) => {
     stock,
     page,
     mark,
+    sortField,
+    sortOrder,
   } = req.query;
 
   if (page < 1 || limit < 1) {
     return res.status(400).json({ error: "Invalid pagination parameters" });
   }
-
+  let sortOptions = { createdAt: -1 };
   const filter = {};
   if (category) filter.category = category;
   if (discount === "true") filter.discount = { $ne: 0 };
@@ -76,6 +78,12 @@ export const getAllProducts = async (req, res) => {
     if (minPrice) filter.price.$gte = Number(minPrice);
     if (maxPrice) filter.price.$lte = Number(maxPrice);
   }
+
+  // Customize sorting based on query parameters
+  if (sortField === "price") {
+    sortOptions = { price: sortOrder === "asc" ? 1 : -1 };
+  }
+
   if (stock) {
     stock > 0 ? (filter.stock = { $gte: Number(stock) }) : (filter.stock = 0);
   }
@@ -84,6 +92,7 @@ export const getAllProducts = async (req, res) => {
   }
   try {
     const products = await Product.find(filter)
+      .sort(sortOptions)
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
